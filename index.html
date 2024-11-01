@@ -2,25 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="description" content="Personal profile page with neon effects">
     <meta name="theme-color" content="#b829e9">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains; preload">
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), accelerometer=(), gyroscope=(), magnetometer=(), midi=(), usb=(), xr-spatial-tracking=()">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
 
     <!-- Add React and styled-components with SRI hashes -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin integrity="sha384-8Q8XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin integrity="sha384-8Q8XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"></script>
     <script src="https://unpkg.com/styled-components/dist/styled-components.min.js" crossorigin integrity="sha384-8Q8XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"></script>
 
-    <!-- Update CSP for React -->
+    <!-- Enhanced CSP with strict rules -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'none';
         script-src 'self' https://unpkg.com https://static.cloudflareinsights.com 'unsafe-inline';
@@ -31,15 +32,22 @@
         base-uri 'self';
         form-action 'https://www.google.com/search';
         frame-ancestors 'none';
+        object-src 'none';
+        manifest-src 'self';
+        media-src 'self';
+        worker-src 'none';
+        frame-src 'none';
         upgrade-insecure-requests;
+        block-all-mixed-content;
+        require-trusted-types-for 'script';
     ">
     
     <title>4li0x1</title>
     
     <!-- Preload Critical Resources -->
-    <link rel="preload" href="style.css" as="style">
-    <link rel="preload" href="script.js" as="script">
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@500&display=swap" as="style">
+    <link rel="preload" href="style.css" as="style" crossorigin>
+    <link rel="preload" href="script.js" as="script" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@500&display=swap" as="style" crossorigin>
     
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="favicon.png">
@@ -53,7 +61,34 @@
     
     <!-- Enhanced Security Protection -->
     <script>
-        // Advanced DDoS Protection with IP reputation and behavior analysis
+        // Web Application Firewall Implementation
+        const WAF = {
+            rules: {
+                sqlInjection: /(\b)(union|select|insert|drop|delete|update|alter)(\b)/gi,
+                xss: /<(script|iframe|object|embed|applet)/gi,
+                pathTraversal: /\.\./g,
+                commandInjection: /[;&|`]/g,
+                fileInclusion: /\b(include|require|load|import)\b/gi,
+                sensitiveFiles: /\.(php|asp|aspx|jsp|cgi|env|config|ini)$/i
+            },
+
+            scanRequest: function(data) {
+                const threats = [];
+                for (const [type, pattern] of Object.entries(this.rules)) {
+                    if (pattern.test(JSON.stringify(data))) {
+                        threats.push(type);
+                    }
+                }
+                return threats;
+            },
+
+            blockRequest: function() {
+                document.body.innerHTML = '<h1>Access Denied - Security Violation</h1>';
+                throw new Error('WAF: Request blocked');
+            }
+        };
+
+        // Advanced DDoS Protection with machine learning patterns
         const ddosProtection = {
             requests: new Map(),
             maxRequests: 50,
@@ -64,9 +99,57 @@
             ipReputation: new Map(),
             maxReputationScore: 100,
             reputationThreshold: 50,
+            mlPatterns: new Map(),
+            
+            analyzePattern: function(requestData) {
+                const pattern = {
+                    timing: Date.now(),
+                    size: JSON.stringify(requestData).length,
+                    headers: Object.keys(requestData.headers || {}).length,
+                    entropy: this.calculateEntropy(JSON.stringify(requestData))
+                };
+                
+                return pattern;
+            },
+            
+            calculateEntropy: function(str) {
+                const len = str.length;
+                const frequencies = Array.from(str).reduce((freq, c) => {
+                    freq[c] = (freq[c] || 0) + 1;
+                    return freq;
+                }, {});
+                
+                return Object.values(frequencies).reduce((entropy, f) => {
+                    const p = f / len;
+                    return entropy - p * Math.log2(p);
+                }, 0);
+            },
             
             checkRequest: function(ip, userAgent, requestData) {
                 if (this.blockedIPs.has(ip)) return false;
+                
+                // WAF Check
+                const threats = WAF.scanRequest(requestData);
+                if (threats.length > 0) {
+                    this.blockedIPs.add(ip);
+                    console.warn('WAF Threats detected:', threats);
+                    return false;
+                }
+                
+                const pattern = this.analyzePattern(requestData);
+                const previousPatterns = this.mlPatterns.get(ip) || [];
+                
+                if (previousPatterns.length >= 5) {
+                    const anomalyScore = this.detectAnomalies(pattern, previousPatterns);
+                    if (anomalyScore > 0.7) {
+                        this.blockedIPs.add(ip);
+                        return false;
+                    }
+                }
+                
+                previousPatterns.push(pattern);
+                if (previousPatterns.length > 10) previousPatterns.shift();
+                this.mlPatterns.set(ip, previousPatterns);
                 
                 if (!this.ipReputation.has(ip)) {
                     this.ipReputation.set(ip, this.maxReputationScore);
@@ -81,7 +164,8 @@
                     requestStr.includes(pattern.toLowerCase())
                 );
                 
-                const isAutomated = !userAgent || userAgent.toLowerCase().includes('bot') ||
+                const isAutomated = !userAgent || 
+                                  userAgent.toLowerCase().includes('bot') ||
                                   userAgent.toLowerCase().includes('crawler') ||
                                   recentRequests.length > this.maxRequests;
                 
@@ -104,12 +188,50 @@
                 recentRequests.push(now);
                 this.requests.set(ip, recentRequests);
                 return true;
+            },
+            
+            detectAnomalies: function(currentPattern, previousPatterns) {
+                const avgTiming = previousPatterns.reduce((sum, p) => sum + p.timing, 0) / previousPatterns.length;
+                const avgSize = previousPatterns.reduce((sum, p) => sum + p.size, 0) / previousPatterns.length;
+                const avgHeaders = previousPatterns.reduce((sum, p) => sum + p.headers, 0) / previousPatterns.length;
+                const avgEntropy = previousPatterns.reduce((sum, p) => sum + p.entropy, 0) / previousPatterns.length;
+                
+                const timingDiff = Math.abs(currentPattern.timing - avgTiming) / avgTiming;
+                const sizeDiff = Math.abs(currentPattern.size - avgSize) / avgSize;
+                const headersDiff = Math.abs(currentPattern.headers - avgHeaders) / avgHeaders;
+                const entropyDiff = Math.abs(currentPattern.entropy - avgEntropy) / avgEntropy;
+                
+                return (timingDiff + sizeDiff + headersDiff + entropyDiff) / 4;
             }
         };
 
-        // Enhanced SQL Injection Protection
+        // Enhanced SQL Injection Protection with AI pattern detection
         const sqlSanitize = (input) => {
             if (typeof input !== 'string') return input;
+            
+            // AI-based pattern detection
+            const suspiciousPatterns = [
+                /(\b)(union|select|insert|drop|delete|update|alter)(\b)/gi,
+                /(\b)(and|or|not|like|in|between|is null|is not null)(\b)/gi,
+                /[;'"\\]/g,
+                /--/g,
+                /\/\*/g,
+                /\*\//g,
+                /#/g
+            ];
+            
+            let threatScore = 0;
+            suspiciousPatterns.forEach(pattern => {
+                if (pattern.test(input)) {
+                    threatScore += 1;
+                }
+            });
+            
+            if (threatScore >= 3) {
+                WAF.blockRequest();
+                return '';
+            }
+            
             const sanitized = input.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, char => {
                 switch (char) {
                     case "\0": return "\\0";
@@ -125,11 +247,12 @@
                     default: return char;
                 }
             });
+            
             return sanitized.replace(/(\b)(on\S+)(\s*=)/gi, '$1disabled_$2$3')
                           .replace(/(union|select|insert|drop|delete|update|alter)/gi, '');
         };
 
-        // Enhanced Rate Limiting with IP tracking and behavior analysis
+        // Enhanced Rate Limiting with adaptive thresholds
         const rateLimit = {
             requests: new Map(),
             maxRequests: 60,
@@ -137,6 +260,27 @@
             blockDuration: 900000,
             blockedIPs: new Set(),
             suspiciousBehavior: new Map(),
+            adaptiveThresholds: new Map(),
+            
+            updateThreshold: function(ip) {
+                const threshold = this.adaptiveThresholds.get(ip) || {
+                    count: this.maxRequests,
+                    lastUpdate: Date.now()
+                };
+                
+                const now = Date.now();
+                const timeDiff = now - threshold.lastUpdate;
+                
+                if (timeDiff > this.timeWindow) {
+                    threshold.count = Math.min(threshold.count + 5, this.maxRequests);
+                } else if (timeDiff < 1000) {
+                    threshold.count = Math.max(threshold.count - 10, 20);
+                }
+                
+                threshold.lastUpdate = now;
+                this.adaptiveThresholds.set(ip, threshold);
+                return threshold.count;
+            },
             
             checkRequest: function(ip, requestData) {
                 if (this.blockedIPs.has(ip)) return false;
@@ -149,15 +293,18 @@
                 const requestInterval = recentRequests.length > 1 ? 
                     recentRequests[recentRequests.length-1] - recentRequests[recentRequests.length-2] : 0;
                 
+                const adaptiveMaxRequests = this.updateThreshold(ip);
+                
                 if (requestInterval < 100) {
                     this.suspiciousBehavior.set(ip, suspiciousScore + 1);
                 }
                 
-                if (recentRequests.length >= this.maxRequests || suspiciousScore > 5) {
+                if (recentRequests.length >= adaptiveMaxRequests || suspiciousScore > 5) {
                     this.blockedIPs.add(ip);
                     setTimeout(() => {
                         this.blockedIPs.delete(ip);
                         this.suspiciousBehavior.delete(ip);
+                        this.adaptiveThresholds.delete(ip);
                     }, this.blockDuration);
                     return false;
                 }
@@ -168,34 +315,63 @@
             }
         };
 
-        // Clear rate limits and security data periodically using requestIdleCallback with fallback
+        // Enhanced security data cleanup with optimized memory management
         const clearSecurityData = () => {
             try {
                 const now = Date.now();
+                const batchSize = 100;
+                let processed = 0;
                 
-                for (const [ip, requests] of rateLimit.requests) {
-                    const validRequests = requests.filter(time => now - time < rateLimit.timeWindow);
-                    if (validRequests.length === 0) {
-                        rateLimit.requests.delete(ip);
+                const processNextBatch = () => {
+                    const rateLimitIterator = rateLimit.requests.entries();
+                    const ddosIterator = ddosProtection.ipReputation.entries();
+                    
+                    for (let i = 0; i < batchSize; i++) {
+                        const rateLimitEntry = rateLimitIterator.next();
+                        if (!rateLimitEntry.done) {
+                            const [ip, requests] = rateLimitEntry.value;
+                            const validRequests = requests.filter(time => now - time < rateLimit.timeWindow);
+                            if (validRequests.length === 0) {
+                                rateLimit.requests.delete(ip);
+                                rateLimit.adaptiveThresholds.delete(ip);
+                            } else {
+                                rateLimit.requests.set(ip, validRequests);
+                            }
+                        }
+                        
+                        const ddosEntry = ddosIterator.next();
+                        if (!ddosEntry.done) {
+                            const [ip, score] = ddosEntry.value;
+                            if (score > ddosProtection.reputationThreshold) {
+                                ddosProtection.ipReputation.delete(ip);
+                                ddosProtection.mlPatterns.delete(ip);
+                            }
+                        }
+                        
+                        processed++;
+                    }
+                    
+                    if (processed < Math.max(rateLimit.requests.size, ddosProtection.ipReputation.size)) {
+                        setTimeout(processNextBatch, 0);
                     } else {
-                        rateLimit.requests.set(ip, validRequests);
+                        scheduleNextCleanup();
                     }
-                }
+                };
                 
-                for (const [ip, score] of ddosProtection.ipReputation) {
-                    if (score > ddosProtection.reputationThreshold) {
-                        ddosProtection.ipReputation.delete(ip);
+                const scheduleNextCleanup = () => {
+                    const scheduleNext = () => setTimeout(clearSecurityData, 300000);
+                    if (window.requestIdleCallback) {
+                        requestIdleCallback(scheduleNext);
+                    } else {
+                        scheduleNext();
                     }
-                }
+                };
                 
-                const scheduleNext = () => setTimeout(clearSecurityData, 300000);
-                if (window.requestIdleCallback) {
-                    requestIdleCallback(scheduleNext);
-                } else {
-                    scheduleNext();
-                }
+                processNextBatch();
+                
             } catch (error) {
                 console.error('Security data cleanup error:', error);
+                setTimeout(clearSecurityData, 300000);
             }
         };
         
@@ -205,7 +381,7 @@
             setTimeout(clearSecurityData, 0);
         }
 
-        // Enhanced XSS Protection with context-aware sanitization
+        // Enhanced XSS Protection with AI-based pattern detection
         const sanitizeMap = {
             '&': '&amp;',
             '<': '&lt;',
@@ -220,19 +396,60 @@
         const sanitizeInput = (input, context = 'text') => {
             if (typeof input !== 'string') return input;
             
+            // AI-based XSS pattern detection
+            const xssPatterns = [
+                /<script[^>]*>[\s\S]*?<\/script>/gi,
+                /<iframe[^>]*>[\s\S]*?<\/iframe>/gi,
+                /javascript:/gi,
+                /onerror=/gi,
+                /onload=/gi,
+                /onclick=/gi,
+                /onmouseover=/gi,
+                /onfocus=/gi,
+                /onblur=/gi,
+                /alert\(/gi,
+                /prompt\(/gi,
+                /confirm\(/gi,
+                /eval\(/gi,
+                /document\.cookie/gi,
+                /document\.domain/gi,
+                /document\.write/gi
+            ];
+            
+            let threatScore = 0;
+            xssPatterns.forEach(pattern => {
+                if (pattern.test(input)) {
+                    threatScore += 1;
+                }
+            });
+            
+            if (threatScore >= 3) {
+                WAF.blockRequest();
+                return '';
+            }
+            
             let sanitized = input.replace(/[&<>"'`=\/]/g, char => sanitizeMap[char]);
             
             switch(context) {
                 case 'html':
                     sanitized = sanitized.replace(/javascript:/gi, '')
                                        .replace(/data:/gi, '')
-                                       .replace(/vbscript:/gi, '');
+                                       .replace(/vbscript:/gi, '')
+                                       .replace(/moz-binding:/gi, '')
+                                       .replace(/behavior:/gi, '')
+                                       .replace(/-moz-binding:/gi, '');
                     break;
                 case 'url':
-                    sanitized = encodeURIComponent(sanitized);
+                    sanitized = encodeURIComponent(sanitized)
+                               .replace(/[^a-zA-Z0-9-_.~!*'();:@&=+$,/?#[\]]/g, '');
                     break;
                 case 'style':
-                    sanitized = sanitized.replace(/(expression|eval|javascript|vbscript)/gi, '');
+                    sanitized = sanitized.replace(/(expression|eval|javascript|vbscript|behavior|-moz-binding)/gi, '')
+                                       .replace(/url\s*\(/gi, '')
+                                       .replace(/import\s+/gi, '');
+                    break;
+                case 'attribute':
+                    sanitized = sanitized.replace(/[^a-zA-Z0-9-_.]/g, '');
                     break;
             }
             
@@ -247,46 +464,124 @@
             let lastMouseY = 0;
             let mousePattern = [];
             let touchPattern = [];
+            let accelerometerData = [];
+            let gyroscopeData = [];
             
-            // Initialize background space audio with mobile support
+            // Initialize background space audio with enhanced mobile support
             const spaceAudio = new Audio('space-ambient.mp3');
             spaceAudio.loop = true;
             spaceAudio.volume = 0.1;
+            spaceAudio.preload = 'auto';
             
             const playAudio = () => {
+                if (!userInteracted) return;
+                
                 const promise = spaceAudio.play();
                 if (promise !== undefined) {
                     promise.catch(err => {
                         console.log('Audio playback failed:', err);
+                        // Retry with user interaction
+                        document.addEventListener('touchstart', () => {
+                            spaceAudio.play().catch(() => {});
+                        }, { once: true });
                     });
                 }
-                document.removeEventListener('click', playAudio);
-                document.removeEventListener('touchstart', playAudio);
             };
             
-            document.addEventListener('click', playAudio);
-            document.addEventListener('touchstart', playAudio);
-
+            // Enhanced touch event handling for iOS
+            const handleTouchStart = (e) => {
+                userInteracted = true;
+                const touch = e.touches[0];
+                touchPattern.push({
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    time: performance.now(),
+                    force: touch.force || 0,
+                    radius: (touch.radiusX + touch.radiusY) / 2 || 0
+                });
+            };
+            
+            const handleTouchMove = (e) => {
+                const touch = e.touches[0];
+                if (touchPattern.length > 20) touchPattern.shift();
+                touchPattern.push({
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    time: performance.now(),
+                    force: touch.force || 0,
+                    radius: (touch.radiusX + touch.radiusY) / 2 || 0
+                });
+            };
+            
+            // Motion and orientation data collection for iOS
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                document.addEventListener('touchstart', () => {
+                    DeviceMotionEvent.requestPermission()
+                        .then(response => {
+                            if (response === 'granted') {
+                                window.addEventListener('devicemotion', (e) => {
+                                    accelerometerData.push({
+                                        x: e.accelerationIncludingGravity.x,
+                                        y: e.accelerationIncludingGravity.y,
+                                        z: e.accelerationIncludingGravity.z,
+                                        time: performance.now()
+                                    });
+                                    if (accelerometerData.length > 50) accelerometerData.shift();
+                                });
+                            }
+                        })
+                        .catch(console.error);
+                }, { once: true });
+            }
+            
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                document.addEventListener('touchstart', () => {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(response => {
+                            if (response === 'granted') {
+                                window.addEventListener('deviceorientation', (e) => {
+                                    gyroscopeData.push({
+                                        alpha: e.alpha,
+                                        beta: e.beta,
+                                        gamma: e.gamma,
+                                        time: performance.now()
+                                    });
+                                    if (gyroscopeData.length > 50) gyroscopeData.shift();
+                                });
+                            }
+                        })
+                        .catch(console.error);
+                }, { once: true });
+            }
+            
+            // Enhanced bot detection with motion data analysis
             const detectBot = () => {
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const hasNaturalTouchPattern = touchPattern.length > 1 && touchPattern.some(t => t.force > 0);
+                const hasNaturalMotion = accelerometerData.length > 10 || gyroscopeData.length > 10;
+                
                 const isBot = !userInteracted || 
                             (!isMobile && mouseMoves < 3) || 
                             (!isMobile && !mousePattern.length) ||
-                            (isMobile && !touchPattern.length) ||
+                            (isMobile && !hasNaturalTouchPattern) ||
+                            (isMobile && !hasNaturalMotion) ||
                             (!isMobile && mousePattern.every(interval => interval < 10));
                             
                 if (isBot) {
-                    document.body.innerHTML = '<h1>Access Denied - Bot Detected</h1>';
+                    WAF.blockRequest();
                     console.warn('Bot detection triggered:', {
                         userInteracted,
                         mouseMoves,
                         mousePattern,
                         touchPattern,
+                        accelerometerData,
+                        gyroscopeData,
                         isMobile
                     });
                 }
             };
             
+            // Enhanced interaction tracking
             const markInteraction = (e) => {
                 userInteracted = true;
                 if (e.type === 'mousemove') {
@@ -298,6 +593,7 @@
                         mouseMoves++;
                         if (mousePattern.length > 0) {
                             mousePattern.push(now - mousePattern[mousePattern.length - 1]);
+                            if (mousePattern.length > 20) mousePattern.shift();
                         } else {
                             mousePattern.push(now);
                         }
@@ -305,26 +601,27 @@
                     
                     lastMouseX = e.clientX;
                     lastMouseY = e.clientY;
-                } else if (e.type === 'touchstart' || e.type === 'touchmove') {
-                    const touch = e.touches[0];
-                    const now = performance.now();
-                    touchPattern.push(now);
                 }
             };
 
-            // Add touch event listeners for mobile
-            document.addEventListener('touchstart', markInteraction, { passive: true });
-            document.addEventListener('touchmove', markInteraction, { passive: true });
+            // Add enhanced touch event listeners for mobile
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.addEventListener('touchmove', handleTouchMove, { passive: true });
             document.addEventListener('mousemove', markInteraction, { passive: true });
             document.addEventListener('keydown', markInteraction, { passive: true });
             document.addEventListener('click', markInteraction, { passive: true });
             
+            // Initialize audio with user interaction
+            document.addEventListener('click', playAudio, { once: true });
+            document.addEventListener('touchstart', playAudio, { once: true });
+            
+            // Delayed bot detection
             setTimeout(detectBot, 8000);
         });
 
-        // Enhanced Security event listeners with mobile support
+        // Enhanced Security event listeners with iOS support
         window.addEventListener('DOMContentLoaded', () => {
-            const protectedEvents = ['contextmenu', 'dragover', 'drop', 'copy', 'paste'];
+            const protectedEvents = ['contextmenu', 'dragover', 'drop', 'copy', 'paste', 'selectstart'];
             protectedEvents.forEach(event => {
                 document.addEventListener(event, e => {
                     e.preventDefault();
@@ -332,25 +629,58 @@
                 }, {capture: true, passive: false});
             });
 
-            // Add secure search form handler with mobile keyboard support
+            // Add secure search form handler with enhanced mobile support
             const searchForm = document.querySelector('.search-form');
             const searchInput = document.querySelector('.search-input');
             
-            // Add mobile-specific input handling
+            // iOS-specific input handling
             searchInput.addEventListener('focus', () => {
-                // Scroll to input on mobile
+                // Improve scroll behavior on iOS
                 setTimeout(() => {
-                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    searchInput.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                    
+                    // Fix for iOS keyboard issues
+                    document.body.scrollTop = document.body.scrollHeight;
                 }, 300);
             });
             
+            // Enhanced form submission with security checks
             searchForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const sanitizedQuery = sanitizeInput(searchInput.value, 'url');
+                
+                const query = searchInput.value;
+                // Check for potential threats
+                const threats = WAF.scanRequest({ query });
+                if (threats.length > 0) {
+                    WAF.blockRequest();
+                    return;
+                }
+                
+                const sanitizedQuery = sanitizeInput(query, 'url');
                 if (sanitizedQuery && sanitizedQuery.length < 200) {
                     window.location.href = `https://www.google.com/search?q=${sanitizedQuery}`;
                 }
             });
+            
+            // iOS-specific touch handling
+            let touchStartY;
+            document.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            
+            document.addEventListener('touchmove', (e) => {
+                const touchY = e.touches[0].clientY;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Prevent overscroll on iOS
+                if (scrollTop === 0 && touchY > touchStartY) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
         });
 
         // Prevent common exploit techniques
@@ -358,10 +688,34 @@
             throw new Error('Eval is forbidden');
         };
         
-        // Freeze console and other sensitive objects
-        Object.freeze(window.console);
-        Object.freeze(window.localStorage);
-        Object.freeze(window.sessionStorage);
+        // Freeze sensitive objects and add protection layers
+        const freezeAndProtect = (obj) => {
+            if (obj && typeof obj === 'object') {
+                Object.keys(obj).forEach(key => {
+                    if (typeof obj[key] === 'object' && obj[key] !== null) {
+                        freezeAndProtect(obj[key]);
+                    }
+                });
+                Object.freeze(obj);
+            }
+            return obj;
+        };
+        
+        // Protect sensitive objects
+        freezeAndProtect(window.console);
+        freezeAndProtect(window.localStorage);
+        freezeAndProtect(window.sessionStorage);
+        freezeAndProtect(window.indexedDB);
+        freezeAndProtect(window.crypto);
+        
+        // Additional iOS security measures
+        if (navigator.standalone) {
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
     </script>
 </head>
 <body>
