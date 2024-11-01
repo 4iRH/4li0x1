@@ -35,6 +35,4 @@ A modern, secure, and responsive personal portfolio website featuring neon aesth
 - PWA capabilities
 - Adaptive viewport handling
 
-## 🔧 Configuration
 
-The application can be configured through environment variables:
